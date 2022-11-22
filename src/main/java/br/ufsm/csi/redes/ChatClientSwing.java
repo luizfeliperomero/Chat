@@ -36,6 +36,7 @@ public class ChatClientSwing extends JFrame {
     private DefaultListModel dfListModel;
     private JTabbedPane tabbedPane = new JTabbedPane();
     private Set<Usuario> chatsAbertos = new HashSet<>();
+    private Socket socket;
 
     public ChatClientSwing() throws UnknownHostException {
         setLayout(new GridBagLayout());
@@ -125,11 +126,13 @@ public class ChatClientSwing extends JFrame {
         });
         listaChat = new JList(dfListModel);
         listaChat.addMouseListener(new MouseAdapter() {
+            @SneakyThrows
             public void mouseClicked(MouseEvent evt) {
                 JList list = (JList) evt.getSource();
                 if (evt.getClickCount() == 2) {
                     int index = list.locationToIndex(evt.getPoint());
                     Usuario user = (Usuario) list.getModel().getElementAt(index);
+                    socket = new Socket(user.getEndereco(), 8081);
                     if (chatsAbertos.add(user)) {
                         tabbedPane.add(user.toString(), new PainelChatPVT(user));
                     }
@@ -168,7 +171,6 @@ public class ChatClientSwing extends JFrame {
                     ((JTextField) e.getSource()).setText("");
                     areaChat.append("Você" + "> " + e.getActionCommand() + "\n");
                     Message message = new Message(e.getActionCommand(), meuUsuario);
-                    Socket socket = new Socket(usuario.getEndereco(), 8081);
                     byte[] messageBytes = new ObjectMapper().writeValueAsString(message).getBytes(StandardCharsets.UTF_8);
                     socket.getOutputStream().write(messageBytes, 0, messageBytes.length);
                 }
