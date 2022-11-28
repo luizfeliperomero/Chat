@@ -33,10 +33,11 @@ public class ChatClientSwing extends JFrame {
     private Usuario meuUsuario;
     private final String endBroadcast = "255.255.255.255";
     private JList listaChat;
-    private DefaultListModel dfListModel;
+    private DefaultListModel dfListModel = new DefaultListModel();
     private JTabbedPane tabbedPane = new JTabbedPane();
     private Set<Usuario> chatsAbertos = new HashSet<>();
     private Socket socket;
+    private SondaService sondaService;
 
     public ChatClientSwing() throws UnknownHostException {
         setLayout(new GridBagLayout());
@@ -108,20 +109,14 @@ public class ChatClientSwing extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setTitle("Chat P2P - Redes de Computadores");
         String nomeUsuario = JOptionPane.showInputDialog(this, "Digite seu nome de usuário: ");
-        new SondaService(nomeUsuario);
+        sondaService = new SondaService(nomeUsuario, this);
         new Thread(new Receiver()).start();
-        try {
-            Thread.sleep(1000);
             add(new JScrollPane(criaLista()), new GridBagConstraints(0, 0, 1, 1, 0.1, 1, GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0));
             setVisible(true);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private JComponent criaLista() {
-        dfListModel = new DefaultListModel();
-        SondaService.usuarios.stream().forEach(u -> {
+        sondaService.usuarios.stream().forEach(u -> {
             dfListModel.addElement(u);
         });
         listaChat = new JList(dfListModel);
@@ -142,6 +137,9 @@ public class ChatClientSwing extends JFrame {
         return listaChat;
     }
 
+    public DefaultListModel getDfListModel() {
+        return dfListModel;
+    }
 
     class PainelChatPVT extends JPanel {
 
@@ -151,7 +149,7 @@ public class ChatClientSwing extends JFrame {
 
         PainelChatPVT(Usuario usuario) {
 
-            meuUsuario = SondaService.usuarios.stream().filter(u -> {
+            meuUsuario = sondaService.usuarios.stream().filter(u -> {
                 try {
                     return InetAddress.getByName(InetAddress.getLocalHost().getHostAddress()).equals(u.getEndereco());
                 } catch (UnknownHostException e) {

@@ -18,10 +18,12 @@ import java.util.stream.Collectors;
 public class SondaService {
     private String username;
     public static final Set<Usuario> usuarios = new HashSet<>();
+    private ChatClientSwing chatClientSwing;
 
-    public SondaService(String username) {
+    public SondaService(String username, ChatClientSwing chatClientSwing) {
        start();
        this.username = username;
+       this.chatClientSwing = chatClientSwing;
     }
 
     public void start() {
@@ -77,7 +79,9 @@ public class SondaService {
                 Sonda sonda = new ObjectMapper().readValue(packetStr, Sonda.class);
                 Usuario user = new Usuario(sonda.getUsername(), System.currentTimeMillis(),sonda.getStatus(), packet.getAddress());
                 synchronized (usuarios) {
-                    usuarios.remove(user);
+                    if(!usuarios.remove(user)) {
+                        chatClientSwing.getDfListModel().addElement(user);
+                    }
                     usuarios.add(user);
                 }
             }
