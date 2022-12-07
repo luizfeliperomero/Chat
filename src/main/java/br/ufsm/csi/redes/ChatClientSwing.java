@@ -230,9 +230,7 @@ public class ChatClientSwing extends JFrame {
                     if(chatsAbertos.add(sender)) {
                         tabbedPane.add(sender.toString(), new PainelChatPVT(sender));
                     }
-                    if(!sender.getEndereco().equals(meuUsuario.getEndereco())) {
-                        PainelChatPVT.areaChat.append(sender.getNome() + ": " + message.getText() + "\n");
-                    }
+                    PainelChatPVT.areaChat.append(sender.getNome() + ": " + message.getText() + "\n");
                 }
             }
         }
