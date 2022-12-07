@@ -33,11 +33,13 @@ public class ChatClientSwing extends JFrame {
     private Usuario meuUsuario;
     private final String endBroadcast = "255.255.255.255";
     private JList listaChat;
-    private DefaultListModel dfListModel = new DefaultListModel();
-    private JTabbedPane tabbedPane = new JTabbedPane();
-    private Set<Usuario> chatsAbertos = new HashSet<>();
+    private final DefaultListModel dfListModel = new DefaultListModel();
+    private final JTabbedPane tabbedPane = new JTabbedPane();
+    private final Set<Usuario> chatsAbertos = new HashSet<>();
     private Socket socket;
-    private SondaService sondaService;
+    private final SondaService sondaService;
+    private PainelChatPVT readerPanel;
+    private PainelChatPVT writerPanel;
 
     public ChatClientSwing() throws UnknownHostException {
         setLayout(new GridBagLayout());
@@ -116,7 +118,7 @@ public class ChatClientSwing extends JFrame {
     }
 
     private JComponent criaLista() {
-        sondaService.usuarios.stream().forEach(u -> {
+        SondaService.usuarios.stream().forEach(u -> {
             dfListModel.addElement(u);
         });
         listaChat = new JList(dfListModel);
@@ -128,8 +130,9 @@ public class ChatClientSwing extends JFrame {
                     int index = list.locationToIndex(evt.getPoint());
                     Usuario user = (Usuario) list.getModel().getElementAt(index);
                     socket = new Socket(user.getEndereco(), 8081);
+                    writerPanel = new PainelChatPVT(user);
                     if (chatsAbertos.add(user)) {
-                        tabbedPane.add(user.toString(), new PainelChatPVT(user));
+                        tabbedPane.add(user.toString(), writerPanel);
                     }
                 }
             }
@@ -149,7 +152,7 @@ public class ChatClientSwing extends JFrame {
 
         PainelChatPVT(Usuario usuario) {
 
-            meuUsuario = sondaService.usuarios.stream().filter(u -> {
+            meuUsuario = SondaService.usuarios.stream().filter(u -> {
                 try {
                     return InetAddress.getByName(InetAddress.getLocalHost().getHostAddress()).equals(u.getEndereco());
                 } catch (UnknownHostException e) {
@@ -212,7 +215,8 @@ public class ChatClientSwing extends JFrame {
 
 
         public class Session implements Runnable {
-            private Socket socket;
+            private final Socket socket;
+            private int i = 1;
             @SneakyThrows
             public Session(Socket socket) {
                 this.socket = socket;
@@ -227,10 +231,12 @@ public class ChatClientSwing extends JFrame {
                     int size = socket.getInputStream().read(buffer);
                     Message message = new ObjectMapper().readValue(new String(buffer, 0, size), Message.class);
                     Usuario sender = message.getSender();
-                    if(chatsAbertos.add(sender)) {
-                        tabbedPane.add(sender.toString(), new PainelChatPVT(sender));
+                    if(!meuUsuario.equals(sender) || i == 1) {
+                        readerPanel = new PainelChatPVT(sender);
+                        tabbedPane.add(sender.toString(), readerPanel);
+                        i++;
                     }
-                    PainelChatPVT.areaChat.append(sender.getNome() + ": " + message.getText() + "\n");
+                    readerPanel.areaChat.append(sender.getNome() + ": " + message.getText() + "\n");
                 }
             }
         }
